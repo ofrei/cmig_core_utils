@@ -13,7 +13,7 @@ starttime0 = now;
 corrflag = true;
 
 try
-  load('/home/dale/sample_dicom_hdrs.mat');
+  load('sample_dicom_hdrs.mat');
   fname_complete = sprintf('%s/processing_complete.mat',dirname_out);
   starttime = now();
   if forceflag & exist(dirname_out,'dir')
