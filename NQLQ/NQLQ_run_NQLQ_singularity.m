@@ -222,11 +222,11 @@ try
           M_tmp2 = M_tmp; M_tmp2(:,3) = M_tmp(:,3)/2; dr = M_tmp(1:3,:)*[(dims_tmp+1)/2 1]'-M_tmp2(1:3,:)*[(dims_tmp2+1)/2 1]'; M_tmp2(1:3,4) = M_tmp2(1:3,4) - dr;
           vol_ref = ctx_mgh2ctx(zeros(dims_tmp2),M_LPH_TO_RAS*M_tmp2);
           if 0
-            vol_flair_t1 = vol_resample_amd(vol_corr,vol_corr_t1,eye(4),2);
+            vol_flair_t1 = vol_resample(vol_corr,vol_corr_t1,eye(4),2);
             showVol(vol_flair_t1,vol_corr_t1)
             keyboard
           end
-          vol_corr = vol_resample_amd(vol_corr_bak,vol_ref,eye(4),2);
+          vol_corr = vol_resample(vol_corr_bak,vol_ref,eye(4),2);
           st = norm(vol_corr.Mvxl2lph(:,3)); 
           st = min(st,3); % Fix numeric issue
           if isfield(hdrs{1},'PerFrameFunctionalGroupsSequence') && ~isempty(hdrs{1}.PerFrameFunctionalGroupsSequence.Item_1) % Enhanced dicom?
@@ -301,7 +301,7 @@ try
 
         if 0
           vol_t1_dcm = dicomreadVolume_amd(dirname_t1_out);
-          vol_flair_dcm = dicomreadVolume_amd(dirname_flair_out); vol_flair_res = vol_resample_amd(vol_flair_dcm,vol_t1_dcm,eye(4),2); showVol(vol_t1_dcm,vol_flair_res); 
+          vol_flair_dcm = dicomreadVolume_amd(dirname_flair_out); vol_flair_res = vol_resample(vol_flair_dcm,vol_t1_dcm,eye(4),2); showVol(vol_t1_dcm,vol_flair_res); 
         end 
 
       else
