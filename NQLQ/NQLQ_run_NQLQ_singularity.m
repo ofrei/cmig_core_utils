@@ -1,8 +1,11 @@
-function NQLQ_run_NQLQ_singularity(dirname_t1,dirname_flair,dirname_out,sex,age,forceflag,metadata)
+function NQLQ_run_NQLQ_singularity(dirname_t1,dirname_flair,dirname_out,sex,age,forceflag,metadata,nq4sif)
 
 if ~exist('forceflag','var') || isempty(forceflag)
   forceflag = false;
   %  forceflag = true;
+end
+if ~exist('nq4sif','var') || isempty(nq4sif)
+  nq4sif='~dale/NQ_Singularity/nq4.sif';
 end
 
 starttime0 = now;
@@ -49,7 +52,7 @@ try
         end
         [sv si] = sort(instancevec);
         fnames = fnames(si); hdrs = hdrs(si);
-        gradwarpinfo = mmil_get_gradwarpinfo_amd(hdrs{1}); [vol_tmp M] = mmil_read_dicom_vol(fnames); vol = ctx_mgh2ctx(vol_tmp,M);
+        gradwarpinfo = mmil_get_gradwarpinfo(hdrs{1}); [vol_tmp M] = mmil_read_dicom_vol(fnames); vol = ctx_mgh2ctx(vol_tmp,M);
         if ~exist('metadata','var') || isempty(metadata)
           if regexpi(hdrs{1}.Manufacturer,'siemens') 
             metadata.Manufacturer = 'siemens',
@@ -95,7 +98,7 @@ try
       else
         vol_corr = ctx_unwarp_grad(vol,gradwarpinfo.gwtype,gradwarpinfo.unwarpflag,gradwarpinfo.isoctrflag);
       end
-      [vol_tmp M_tmp] = ctx_ctx2mgh(vol_corr); M_tmp = M_RAS_TO_LPH*M_tmp; dims_tmp = size(vol_tmp); ctr = M_tmp(1:3,:)*([(dims_tmp+1)/2 1]');
+      [vol_tmp M_tmp] = QD_ctx2mgh(vol_corr); M_tmp = M_RAS_TO_LPH*M_tmp; dims_tmp = size(vol_tmp); ctr = M_tmp(1:3,:)*([(dims_tmp+1)/2 1]');
 
       if ~exist(outputdir,'dir'), mkdir(outputdir); end
 
@@ -136,7 +139,7 @@ try
         end
       end
 
-      dicomwriteVol_amd(vol_corr, outputdir, hdrs); % Should benchmark time used to write DICOM files -- ~1s per image currently
+      dicomwriteVol(vol_corr, outputdir, hdrs); % Should benchmark time used to write DICOM files -- ~1s per image currently
 
       save(fname_t1_info,'ctr','hdrs');
       fprintf(1,'file %s written\n',fname_t1_info);
@@ -172,7 +175,7 @@ try
           end
           [sv si] = sort(instancevec);
           fnames = fnames(si); hdrs = hdrs(si);
-          gradwarpinfo = mmil_get_gradwarpinfo_amd(hdrs{1}); [vol_tmp M] = mmil_read_dicom_vol(fnames); vol = ctx_mgh2ctx(vol_tmp,M);
+          gradwarpinfo = mmil_get_gradwarpinfo(hdrs{1}); [vol_tmp M] = mmil_read_dicom_vol(fnames); vol = ctx_mgh2ctx(vol_tmp,M);
         end
         if norm(vol.Mvxl2lph(:,3))>1.5, fieldname = 'hdr_flair_2d'; else fieldname = 'hdr_flair_3d'; end
         switch NQLQ_get_manufacturer(metadata.Manufacturer)
@@ -215,7 +218,7 @@ try
         %  Resample to thinner slices 
         if norm(vol_corr.Mvxl2lph(:,3))>3
           fprintf(1,'Resampling FLAIR acquaision to thinner slices\n');
-          [vol_tmp M_tmp] = ctx_ctx2mgh(vol_corr); M_tmp = M_RAS_TO_LPH*M_tmp; dims_tmp = size(vol_tmp); dims_tmp2 = dims_tmp; dims_tmp2(3) = dims_tmp(3)*2;
+          [vol_tmp M_tmp] = QD_ctx2mgh(vol_corr); M_tmp = M_RAS_TO_LPH*M_tmp; dims_tmp = size(vol_tmp); dims_tmp2 = dims_tmp; dims_tmp2(3) = dims_tmp(3)*2;
           M_tmp2 = M_tmp; M_tmp2(:,3) = M_tmp(:,3)/2; dr = M_tmp(1:3,:)*[(dims_tmp+1)/2 1]'-M_tmp2(1:3,:)*[(dims_tmp2+1)/2 1]'; M_tmp2(1:3,4) = M_tmp2(1:3,4) - dr;
           vol_ref = ctx_mgh2ctx(zeros(dims_tmp2),M_LPH_TO_RAS*M_tmp2);
           if 0
@@ -293,7 +296,7 @@ try
         if ~exist(outputdir,'dir'), mkdir(outputdir); end
 
         dirname_flair_out = outputdir;
-        dicomwriteVol_amd(vol_corr, dirname_flair_out, hdrs);
+        dicomwriteVol(vol_corr, dirname_flair_out, hdrs);
         save(fname_flair_info,'hdrs');
 
         if 0
@@ -310,11 +313,11 @@ try
   end
   for phase = 1:2
 %  for phase = 2
-    cmd = sprintf('singularity run -B %s:/tmp/input1 -B %s:/tmp/output ~dale/NQ_Singularity/nq4.sif NeuroQuant -N -i1 /tmp/input1 --max-measurement-index 1000 --reports NQARA --output-directory /tmp/output',dirname_t1_out,dirname_out);
+    cmd = sprintf('singularity run -B %s:/tmp/input1 -B %s:/tmp/output %s NeuroQuant -N -i1 /tmp/input1 --max-measurement-index 1000 --reports NQARA --output-directory /tmp/output',dirname_t1_out,dirname_out,nq4sif);
     fname_done = sprintf('%s/NQ_done.mat',dirname_out); fname_failed = sprintf('%s/NQ_failed.mat',dirname_out);
     if phase==2
       if ~exist('dirname_flair_out','var') || isempty(dirname_flair_out), continue; end
-      cmd = sprintf('singularity run -B %s:/tmp/input1 -B %s:/tmp/input2 -B %s:/tmp/output ~dale/NQ_Singularity/nq4.sif LesionQuant -N -i1 /tmp/input1 -i2 /tmp/input2 --max-measurement-index 20 --reports LQBR --output-directory /tmp/output',dirname_t1_out,dirname_flair_out,dirname_out);
+      cmd = sprintf('singularity run -B %s:/tmp/input1 -B %s:/tmp/input2 -B %s:/tmp/output %s LesionQuant -N -i1 /tmp/input1 -i2 /tmp/input2 --max-measurement-index 20 --reports LQBR --output-directory /tmp/output',dirname_t1_out,dirname_flair_out,dirname_out,nq4sif);
       fname_done = sprintf('%s/LQ_done.mat',dirname_out); fname_failed = sprintf('%s/LQ_failed.mat',dirname_out);
     end
     if (exist('sex','var') & exist('age','var')) && (~isempty(sex) && ~isempty(age))
