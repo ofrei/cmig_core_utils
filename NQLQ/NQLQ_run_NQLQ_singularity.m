@@ -52,7 +52,7 @@ try
         end
         [sv si] = sort(instancevec);
         fnames = fnames(si); hdrs = hdrs(si);
-        gradwarpinfo = mmil_get_gradwarpinfo(hdrs{1}); [vol_tmp M] = mmil_read_dicom_vol(fnames); vol = ctx_mgh2ctx(vol_tmp,M);
+        gradwarpinfo = mmil_get_gradwarpinfo(hdrs{1}); [vol_tmp M] = QD_read_dicomvol(fnames); vol = ctx_mgh2ctx(vol_tmp,M);
         if ~exist('metadata','var') || isempty(metadata)
           if regexpi(hdrs{1}.Manufacturer,'siemens') 
             metadata.Manufacturer = 'siemens',

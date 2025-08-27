@@ -1,4 +1,4 @@
-function vol2r = vol_resample_amd(vol2, vol1, M_vol1_to_vol2, varargin)
+function vol2r = vol_resample(vol2, vol1, M_vol1_to_vol2, varargin)
 % Resample an image volume after a linear transformation. 
 %
 % function vol2r = vol_resample(vol2, vol1, M_vol1_to_vol2, [interpm], [padding], [bclamp])
